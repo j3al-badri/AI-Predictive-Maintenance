@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Predictive Maintenance</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#f4f7fb;color:#182230}
+.header{background:#14213d;color:white;padding:28px 6%;display:flex;justify-content:space-between;align-items:center}
+.header h1{margin:0;font-size:28px}.header p{margin:6px 0 0;opacity:.8}
+.badge{background:#1d3557;padding:10px 16px;border-radius:20px;font-size:13px}
+.container{max-width:1200px;margin:28px auto;padding:0 20px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px}
+.card{background:white;border-radius:14px;padding:20px;box-shadow:0 3px 14px rgba(0,0,0,.07)}
+.metric{font-size:30px;font-weight:700;margin-top:8px}.label{color:#6b7280;font-size:13px}
+.layout{display:grid;grid-template-columns:1fr 1.6fr;gap:20px}
+.machine-list{display:flex;flex-direction:column;gap:10px;margin-top:15px}
+.machine{padding:15px;border:1px solid #e3e8ef;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.machine:hover{background:#f7f9fc}.machine.active{border:2px solid #315efb}
+.status{font-size:12px;font-weight:700;padding:6px 9px;border-radius:12px}
+.low{background:#e7f7ed;color:#18794e}.medium{background:#fff4d6;color:#946200}.high{background:#ffe5e5;color:#b42318}
+h2{margin-top:0}
+.detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.sensor{background:#f7f9fc;border-radius:10px;padding:16px}.sensor strong{display:block;font-size:22px;margin-top:5px}
+.risk{margin-top:18px;padding:20px;border-radius:12px;background:#fff4f4;border-left:5px solid #d92d20}
+.risk h3{margin:0 0 7px}.risk-number{font-size:36px;font-weight:700}
+.recommend{margin-top:15px;background:#eef4ff;border-radius:12px;padding:18px}
+.footer{text-align:center;color:#7a8492;padding:25px;font-size:12px}
+select{padding:10px;border:1px solid #ccd4df;border-radius:8px;background:white}
+@media(max-width:800px){.grid,.layout{grid-template-columns:1fr 1fr}.layout{grid-template-columns:1fr}.header{display:block}.badge{display:inline-block;margin-top:12px}}
+@media(max-width:520px){.grid,.detail-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div>
+    <h1>AI Predictive Maintenance</h1>
+    <p>Industrial Machine Failure Risk Monitoring</p>
+  </div>
+  <div class="badge">AI / Random Forest Prototype</div>
+</header>
+
+<main class="container">
+  <section class="grid">
+    <div class="card"><div class="label">Total Machines</div><div class="metric" id="total">5</div></div>
+    <div class="card"><div class="label">Healthy</div><div class="metric" id="healthy">2</div></div>
+    <div class="card"><div class="label">Medium Risk</div><div class="metric" id="medium">1</div></div>
+    <div class="card"><div class="label">High Risk</div><div class="metric" id="high">2</div></div>
+  </section>
+
+  <section class="layout">
+    <div class="card">
+      <h2>Machines</h2>
+      <div class="machine-list" id="machineList"></div>
+    </div>
+
+    <div class="card">
+      <h2>Machine Prediction</h2>
+      <label class="label">Select machine</label><br>
+      <select id="machineSelect"></select>
+
+      <div class="detail-grid" style="margin-top:18px">
+        <div class="sensor"><span class="label">Temperature</span><strong id="temperature">-- °C</strong></div>
+        <div class="sensor"><span class="label">Vibration</span><strong id="vibration">-- mm/s</strong></div>
+        <div class="sensor"><span class="label">Pressure</span><strong id="pressure">-- bar</strong></div>
+        <div class="sensor"><span class="label">Runtime</span><strong id="runtime">-- h</strong></div>
+      </div>
+
+      <div class="risk" id="riskBox">
+        <h3>AI Failure Risk</h3>
+        <div class="risk-number" id="probability">--%</div>
+        <div id="riskText">--</div>
+      </div>
+
+      <div class="recommend">
+        <strong>Recommended Action</strong>
+        <p id="recommendation" style="margin-bottom:0">--</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="footer">AI Engineering Predictive Maintenance — Demonstration Prototype</div>
+
+<script>
+const machines = {
+  M001:{temperature:62.4,vibration:2.1,pressure:5.8,runtime:3180,probability:8,risk:"LOW",recommendation:"Continue normal operation and routine inspection."},
+  M002:{temperature:71.8,vibration:3.4,pressure:6.2,runtime:4210,probability:34,risk:"MEDIUM",recommendation:"Monitor sensor values and schedule preventive inspection."},
+  M003:{temperature:78.5,vibration:4.6,pressure:6.8,runtime:4870,probability:72,risk:"HIGH",recommendation:"Schedule maintenance inspection as soon as possible."},
+  M004:{temperature:84.7,vibration:5.8,pressure:7.4,runtime:5290,probability:91,risk:"HIGH",recommendation:"Prioritize maintenance and inspect the machine before continued operation."},
+  M005:{temperature:59.6,vibration:1.8,pressure:5.5,runtime:2760,probability:5,risk:"LOW",recommendation:"Machine condition appears healthy; continue routine monitoring."}
+};
+
+const list=document.getElementById("machineList");
+const select=document.getElementById("machineSelect");
+
+Object.keys(machines).forEach(id=>{
+  const m=machines[id];
+  const div=document.createElement("div");
+  div.className="machine";
+  div.dataset.id=id;
+  div.innerHTML=`<strong>${id}</strong><span class="status ${m.risk.toLowerCase()}">${m.risk}</span>`;
+  div.onclick=()=>showMachine(id);
+  list.appendChild(div);
+
+  const opt=document.createElement("option");
+  opt.value=id; opt.textContent=id;
+  select.appendChild(opt);
+});
+
+select.onchange=()=>showMachine(select.value);
+
+function showMachine(id){
+  const m=machines[id];
+  select.value=id;
+  document.querySelectorAll(".machine").forEach(x=>x.classList.toggle("active",x.dataset.id===id));
+  document.getElementById("temperature").textContent=m.temperature+" °C";
+  document.getElementById("vibration").textContent=m.vibration+" mm/s";
+  document.getElementById("pressure").textContent=m.pressure+" bar";
+  document.getElementById("runtime").textContent=m.runtime+" h";
+  document.getElementById("probability").textContent=m.probability+"%";
+  document.getElementById("riskText").textContent=m.risk+" FAILURE RISK";
+  document.getElementById("recommendation").textContent=m.recommendation;
+  const box=document.getElementById("riskBox");
+  box.className="risk";
+  if(m.risk==="LOW") box.style.borderLeftColor="#1a7f55";
+  else if(m.risk==="MEDIUM") box.style.borderLeftColor="#b7791f";
+  else box.style.borderLeftColor="#d92d20";
+}
+showMachine("M004");
+</script>
+</body>
+</html>
